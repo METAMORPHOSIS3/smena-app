@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Red Bar</title>
+<meta name="theme-color" content="#1B1725">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Red Bar">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+  :root{
+    --bg:#1B1725;
+    --surface:#242034;
+    --surface-2:#2E293F;
+    --line:#3B3552;
+    --text:#F4EFE6;
+    --text-dim:#A69FBD;
+    --amber:#E8A33D;
+    --amber-dim:#7A5A25;
+    --teal:#48BCB8;
+    --teal-dim:#255C5A;
+    --danger:#D96C6C;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  button{touch-action:manipulation;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+    padding:20px 14px 60px;
+    padding-top:calc(20px + env(safe-area-inset-top));
+    padding-left:calc(14px + env(safe-area-inset-left));
+    padding-right:calc(14px + env(safe-area-inset-right));
+  }
+  .app{max-width:760px;margin:0 auto;}
+
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header.top h1{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:0.2px;
+    margin:0;
+  }
+  header.top h1 span{color:var(--amber);}
+  header.top .shift-info{
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+
+  nav.tabs{
+    display:flex;
+    gap:6px;
+    background:var(--surface);
+    padding:5px;
+    border-radius:16px;
+    margin-bottom:18px;
+  }
+  nav.tabs button{
+    flex:1;
+    padding:11px 8px;
+    border:none;
+    border-radius:12px;
+    background:transparent;
+    color:var(--text-dim);
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  nav.tabs button.active{
+    background:var(--amber);
+    color:#241704;
+  }
+  nav.tabs button[data-tab="balloons"].active{
+    background:var(--teal);
+    color:#082A29;
+  }
+  nav.tabs button[data-tab="report"].active{
+    background:var(--text);
+    color:#221D30;
+  }
+
+  /* MOBILE: bottom fixed tab bar for easy thumb reach */
+  @media (max-width: 640px){
+    body{
+      padding-bottom:calc(84px + env(safe-area-inset-bottom));
+    }
+    nav.tabs{
+      position:fixed;
+      left:10px;
+      right:10px;
+      bottom:calc(10px + env(safe-area-inset-bottom));
+      margin-bottom:0;
+      box-shadow:0 6px 20px rgba(0,0,0,0.45);
+      z-index:50;
+      max-width:740px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    nav.tabs button{
+      padding:13px 8px;
+      font-size:14px;
+    }
+  }
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color:var(--text-dim);
+    margin:0 0 12px;
+    font-weight:700;
+  }
+
+  /* Menu grid */
+  .menu-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .btn-edit-toggle{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text-dim);
+    border-radius:10px;
+    padding:6px 11px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-edit-toggle.active{
+    background:var(--amber);
+    color:#241704;
+    border-color:var(--amber);
+  }
+  .menu-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+  }
+  @media(min-width:520px){ .menu-grid{grid-template-columns:repeat(3,1fr);} }
+  .menu-grid.editing{grid-template-columns:1fr;}
+  .menu-item{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 8px;
+    text-align:left;
+    cursor:pointer;
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    transition:border-color .15s, transform .1s;
+    position:relative;
+  }
+  .menu-item:active{transform:scale(0.97);}
+  .menu-item:hover{border-color:var(--amber);}
+  .menu-item .name{font-weight:700;font-size:14px;}
+  .menu-item .price{font-size:12.5px;color:var(--amber);}
+  .menu-item .qty-badge{
+    position:absolute;top:6px;right:6px;
+    background:var(--amber);color:#241704;
+    font-size:11px;font-weight:800;
+    min-width:18px;height:18px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 4px;
+  }
+  .menu-item-edit{
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .menu-item-edit input[type=text]{flex:2;min-width:0;}
+  .menu-item-edit input[type=number]{flex:1;min-width:0;max-width:90px;}
+  .menu-item-edit button.del-menu{
+    background:none;border:none;color:var(--danger);
+    font-size:12.5px;font-weight:700;cursor:pointer;
+    white-space:nowrap;padding:6px 4px;
+  }
+  .menu-item-edit button.del-menu.confirming{
+    color:#fff;background:var(--danger);border-radius:8px;padding:6px 8px;
+  }
+
+  .add-menu-row{
+    display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;
+  }
+  .add-menu-row input{flex:1;min-width:90px;}
+  .btn-icon{
+    background:var(--surface-2);
+    border:1px dashed var(--line);
+    color:var(--text-dim);
+    border-radius:12px;
+    padding:10px;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:700;
+  }
+  .btn-icon:hover{color:var(--text);border-color:var(--text-dim);}
+
+  input[type=number], input[type=text]{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:16px;
+    width:100%;
+  }
+  input:focus{outline:2px solid var(--amber);outline-offset:1px;}
+
+  label.field{
+    display:flex;flex-direction:column;gap:4px;
+    font-size:12px;color:var(--text-dim);flex:1;
+  }
+
+  /* Cart */
+  .cart-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+  .cart-row{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:8px 10px;
+  }
+  .cart-row .info{font-size:13.5px;}
+  .cart-row .info b{font-weight:700;}
+  .cart-row .stepper{display:flex;align-items:center;gap:8px;}
+  .stepper button{
+    width:26px;height:26px;border-radius:8px;border:none;
+    background:var(--line);color:var(--text);font-size:16px;cursor:pointer;
+    line-height:1;
+  }
+  .stepper span{min-width:16px;text-align:center;font-weight:700;}
+  .cart-empty{color:var(--text-dim);font-size:13px;padding:6px 2px;}
+
+  .cart-total{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:15px;font-weight:800;
+    padding-top:10px;border-top:1px solid var(--line);margin-top:4px;
+  }
+  .cart-total span.sum{color:var(--amber);}
+
+  .btn-main{
+    width:100%;
+    margin-top:12px;
+    background:var(--amber);
+    color:#241704;
+    border:none;
+    border-radius:12px;
+    padding:13px;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .btn-main:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-main.teal{background:var(--teal);color:#082A29;}
+
+  /* Orders / balloon log */
+  .log-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;}
+  .log-row{
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:9px 11px;
+    font-size:13px;
+  }
+  .log-row .top-line{display:flex;justify-content:space-between;font-weight:700;}
+  .log-row .sub{color:var(--text-dim);font-size:12px;margin-top:3px;}
+  .log-row .del{
+    float:right;background:none;border:none;color:var(--danger);
+    cursor:pointer;font-size:12px;font-weight:700;padding:0;margin-left:8px;
+  }
+
+  /* Balloon form */
+  .balloon-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+  .balloon-result{
+    background:var(--bg);
+    border:1px solid var(--teal-dim);
+    border-radius:10px;
+    padding:8px 10px;
+    text-align:center;
+    min-width:70px;
+  }
+  .balloon-result .val{font-size:20px;font-weight:800;color:var(--teal);}
+  .balloon-result .lbl{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
+
+  .balloon-card{
+    background:var(--surface-2);
+    border-radius:12px;
+    padding:12px;
+  }
+  .balloon-card .bc-top{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:10px;
+  }
+  .balloon-card .bc-top .bc-name{font-weight:700;font-size:14.5px;}
+  .balloon-card .bc-top .bc-time{font-size:11.5px;color:var(--text-dim);}
+  .balloon-card .bc-stats{
+    display:flex;gap:8px;align-items:stretch;
+  }
+  .bc-stat{
+    flex:1;
+    background:var(--bg);
+    border-radius:10px;
+    padding:8px 6px;
+    text-align:center;
+  }
+  .bc-stat .bc-lbl{font-size:10px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
+  .bc-stat .bc-val{font-size:17px;font-weight:800;}
+  .bc-stat.ordered .bc-val{color:var(--text);}
+  .bc-stat.remaining .bc-val{color:var(--teal);}
+  .bc-stat.remaining.zero .bc-val{color:#6FB56C;}
+  .bc-stat.remaining.over .bc-val{color:var(--danger);}
+  .bc-stat.given{
+    display:flex;flex-direction:column;justify-content:center;gap:4px;
+  }
+  .bc-given-controls{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .bc-given-controls button{
+    width:28px;height:28px;border-radius:8px;border:none;
+    background:var(--teal-dim);color:var(--teal);font-size:18px;font-weight:700;
+    cursor:pointer;line-height:1;
+  }
+  .bc-given-controls button.minus{background:var(--line);color:var(--text);}
+  .bc-given-controls .bc-val{min-width:22px;}
+  .bc-card-footer{
+    display:flex;justify-content:flex-end;margin-top:8px;
+  }
+  .bc-card-footer button{
+    background:none;border:none;color:var(--danger);
+    font-size:11.5px;font-weight:700;cursor:pointer;padding:2px 4px;
+  }
+
+  .price-setting{
+    display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);
+    margin-bottom:12px;
+  }
+  .price-setting input{width:90px;}
+
+  /* Report */
+  .report-block{margin-bottom:16px;}
+  .report-block h3{
+    font-size:13px;text-transform:uppercase;letter-spacing:0.5px;
+    color:var(--amber);margin:0 0 8px;
+  }
+  .report-block.balloons h3{color:var(--teal);}
+  table.report-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.report-table th, table.report-table td{
+    text-align:left;padding:7px 4px;border-bottom:1px solid var(--line);
+  }
+  table.report-table th{color:var(--text-dim);font-weight:600;font-size:12px;}
+  table.report-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .grand-total{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--surface-2);border-radius:12px;padding:14px 16px;margin-top:6px;
+  }
+  .grand-total .lbl{font-size:14px;color:var(--text-dim);}
+  .grand-total .val{font-size:24px;font-weight:900;color:var(--amber);}
+  .report-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .report-actions button{flex:1;min-width:130px;}
+  .btn-secondary{
+    background:var(--surface-2);color:var(--text);border:1px solid var(--line);
+    border-radius:12px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;
+  }
+  .btn-danger{
+    background:transparent;color:var(--danger);border:1px solid var(--danger);
+    border-radius:12px;padding:11px;font-size:13.5px;font-weight:700;cursor:pointer;
+  }
+  .empty-note{color:var(--text-dim);font-size:13px;text-align:center;padding:16px 0;}
+
+  @media print{
+    nav.tabs, .no-print{display:none !important;}
+    body{background:#fff;color:#000;padding:0;}
+    .card{border:1px solid #ccc;background:#fff;}
+    .panel{display:none !important;}
+    .panel#report.active{display:block !important;}
+    .report-block h3{color:#000;}
+    .grand-total .val{color:#000;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <h1>Red Bar</h1>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="bar" class="active">Бар</button>
+    <button data-tab="balloons">Шары</button>
+    <button data-tab="report">Отчёт</button>
+  </nav>
+
+  <!-- BAR PANEL -->
+  <section class="panel active" id="bar">
+    <div class="card">
+      <div class="menu-header">
+        <h2 style="margin:0;">Меню</h2>
+        <button class="btn-edit-toggle" id="editMenuToggle">✎ Редактировать</button>
+      </div>
+      <div class="menu-grid" id="menuGrid"></div>
+      <div class="add-menu-row">
+        <input type="text" id="newItemName" placeholder="Новый напиток">
+        <input type="number" id="newItemPrice" placeholder="Цена ₽" min="0" style="max-width:100px;">
+        <button class="btn-icon" id="addMenuItemBtn">+ В меню</button>
+      </div>
+    </div>
+
+    <div class="card" id="cartCard">
+      <h2>Текущий заказ</h2>
+      <div class="cart-list" id="cartList"></div>
+      <div class="cart-total">
+        <span>Итого</span>
+        <span class="sum" id="cartTotal">0 ₽</span>
+      </div>
+      <button class="btn-main" id="submitOrderBtn" disabled>Оформить заказ</button>
+    </div>
+
+    <div class="card">
+      <h2>История заказов за смену</h2>
+      <div class="log-list" id="orderLog"></div>
+    </div>
+  </section>
+
+  <!-- BALLOONS PANEL -->
+  <section class="panel" id="balloons">
+    <div class="card">
+      <h2>Цена за шар (необязательно)</h2>
+      <div class="price-setting">
+        <span>₽ за 1 шар:</span>
+        <input type="number" id="balloonPrice" min="0" value="0">
+      </div>
+
+      <h2>Новая запись</h2>
+      <div class="balloon-form">
+        <label class="field">Клиент / комментарий
+          <input type="text" id="balloonClient" placeholder="напр. Стол 4">
+        </label>
+        <label class="field" style="max-width:110px;">Заказано шаров
+          <input type="number" id="balloonOrdered" min="0" value="0">
+        </label>
+      </div>
+      <button class="btn-main teal" id="addBalloonBtn">Создать запись</button>
+    </div>
+
+    <div class="card">
+      <h2>Записи по шарам за смену</h2>
+      <div class="log-list" id="balloonLog"></div>
+    </div>
+  </section>
+
+  <!-- REPORT PANEL -->
+  <section class="panel" id="report">
+    <div class="card no-print">
+      <div class="report-actions">
+        <button class="btn-secondary" id="downloadReportBtn">⬇ Скачать отчёт (Word)</button>
+        <button class="btn-secondary" id="printReportBtn">🖨 Печать отчёта</button>
+        <button class="btn-danger" id="clearShiftBtn">Завершить смену (очистить)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Отчёт за смену</h2>
+      <div id="reportContent"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const STORAGE_KEYS = {
+  menu: 'barapp:menu',
+  orders: 'barapp:orders',
+  balloons: 'barapp:balloons',
+  balloonPrice: 'barapp:balloon_price',
+  shiftStart: 'barapp:shift_start'
+};
+
+let menu = [];
+let cart = {}; // menuId -> qty
+let editMode = false;
+let orders = [];
+let balloonRecords = [];
+let balloonPrice = 0;
+let shiftStart = null;
+
+const defaultMenu = [
+  {id:'m1', name:'Пиво', price:250},
+  {id:'m2', name:'Вино (бокал)', price:350},
+  {id:'m3', name:'Коктейль', price:450},
+  {id:'m4', name:'Виски', price:400},
+  {id:'m5', name:'Водка', price:300},
+  {id:'m6', name:'Кола / Спрайт', price:150},
+  {id:'m7', name:'Сок', price:180},
+  {id:'m8', name:'Кофе', price:200},
+  {id:'m9', name:'Чай', price:150},
+  {id:'m10', name:'Вода', price:100},
+];
+
+function uid(prefix){ return prefix + Date.now() + Math.floor(Math.random()*1000); }
+
+async function safeGet(key){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+async function safeSet(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); }
+  catch(e){ console.error('storage set failed', key, e); }
+}
+async function safeDelete(key){
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+
+function money(n){ return (Math.round(n*100)/100).toLocaleString('ru-RU') + ' ₽'; }
+
+/* ---------- INIT ---------- */
+async function init(){
+  const loadedMenu = await safeGet(STORAGE_KEYS.menu);
+  menu = loadedMenu || defaultMenu;
+  if(!loadedMenu) await safeSet(STORAGE_KEYS.menu, menu);
+
+  orders = (await safeGet(STORAGE_KEYS.orders)) || [];
+  balloonRecords = (await safeGet(STORAGE_KEYS.balloons)) || [];
+  balloonPrice = (await safeGet(STORAGE_KEYS.balloonPrice)) ?? 0;
+  shiftStart = await safeGet(STORAGE_KEYS.shiftStart);
+  if(!shiftStart){
+    shiftStart = new Date().toISOString();
+    await safeSet(STORAGE_KEYS.shiftStart, shiftStart);
+  }
+
+  document.getElementById('balloonPrice').value = balloonPrice;
+  renderMenu();
+  renderCart();
+  renderOrderLog();
+  renderBalloonLog();
+  renderReport();
+}
+
+/* ---------- TABS ---------- */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'report') renderReport();
+  });
+});
+
+/* ---------- MENU / BAR ---------- */
+function renderMenu(){
+  const grid = document.getElementById('menuGrid');
+  grid.innerHTML = '';
+  grid.classList.toggle('editing', editMode);
+
+  if(editMode){
+    menu.forEach(item=>{
+      const row = document.createElement('div');
+      row.className = 'menu-item-edit';
+      row.innerHTML = `
+        <input type="text" value="${escapeHtml(item.name)}" data-id="${item.id}" data-field="name">
+        <input type="number" min="0" value="${item.price}" data-id="${item.id}" data-field="price">
+        <button class="del-menu" data-id="${item.id}">Удалить</button>
+      `;
+      grid.appendChild(row);
+    });
+    grid.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('change', async ()=>{
+        const item = menu.find(m=>m.id === inp.dataset.id);
+        if(!item) return;
+        if(inp.dataset.field === 'name'){
+          const v = inp.value.trim();
+          if(v) item.name = v; else inp.value = item.name;
+        } else {
+          const v = parseFloat(inp.value);
+          if(!isNaN(v) && v >= 0) item.price = v; else inp.value = item.price;
+        }
+        await safeSet(STORAGE_KEYS.menu, menu);
+      });
+    });
+    grid.querySelectorAll('.del-menu').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        if(b.dataset.confirm !== 'yes'){
+          b.dataset.confirm = 'yes';
+          b.textContent = 'Точно?';
+          b.classList.add('confirming');
+          setTimeout(()=>{
+            if(b.dataset.confirm === 'yes'){
+              b.dataset.confirm = '';
+              b.textContent = 'Удалить';
+              b.classList.remove('confirming');
+            }
+          }, 2500);
+          return;
+        }
+        menu = menu.filter(m=>m.id !== b.dataset.id);
+        delete cart[b.dataset.id];
+        await safeSet(STORAGE_KEYS.menu, menu);
+        renderMenu();
+        renderCart();
+      });
+    });
+    return;
+  }
+
+  menu.forEach(item=>{
+    const qty = cart[item.id] || 0;
+    const div = document.createElement('button');
+    div.className = 'menu-item';
+    div.innerHTML = `
+      <div class="name">${escapeHtml(item.name)}</div>
+      <div class="price">${money(item.price)}</div>
+      ${qty > 0 ? `<div class="qty-badge">${qty}</div>` : ''}
+    `;
+    div.addEventListener('click', ()=>{
+      cart[item.id] = (cart[item.id]||0) + 1;
+      renderMenu();
+      renderCart();
+    });
+    grid.appendChild(div);
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderCart(){
+  const list = document.getElementById('cartList');
+  const ids = Object.keys(cart).filter(id=>cart[id] > 0);
+  if(ids.length === 0){
+    list.innerHTML = '<div class="cart-empty">Заказ пуст — нажмите на напиток в меню</div>';
+  } else {
+    list.innerHTML = '';
+    ids.forEach(id=>{
+      const item = menu.find(m=>m.id===id);
+      if(!item) return;
+      const row = document.createElement('div');
+      row.className = 'cart-row';
+      row.innerHTML = `
+        <div class="info"><b>${escapeHtml(item.name)}</b> · ${money(item.price)}</div>
+        <div class="stepper">
+          <button data-act="dec" data-id="${id}">−</button>
+          <span>${cart[id]}</span>
+          <button data-act="inc" data-id="${id}">+</button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('button[data-act]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const id = b.dataset.id;
+        if(b.dataset.act === 'inc') cart[id] = (cart[id]||0)+1;
+        else cart[id] = Math.max(0,(cart[id]||0)-1);
+        renderMenu();
+        renderCart();
+      });
+    });
+  }
+  const total = ids.reduce((sum,id)=>{
+    const item = menu.find(m=>m.id===id);
+    return sum + (item ? item.price*cart[id] : 0);
+  },0);
+  document.getElementById('cartTotal').textContent = money(total);
+  document.getElementById('submitOrderBtn').disabled = total === 0;
+}
+
+document.getElementById('editMenuToggle').addEventListener('click', ()=>{
+  editMode = !editMode;
+  const btn = document.getElementById('editMenuToggle');
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? '✓ Готово' : '✎ Редактировать';
+  renderMenu();
+});
+
+document.getElementById('addMenuItemBtn').addEventListener('click', async ()=>{
+  const nameInput = document.getElementById('newItemName');
+  const priceInput = document.getElementById('newItemPrice');
+  const name = nameInput.value.trim();
+  const price = parseFloat(priceInput.value);
+  if(!name || isNaN(price) || price < 0) return;
+  menu.push({id: uid('m'), name, price});
+  await safeSet(STORAGE_KEYS.menu, menu);
+  nameInput.value = '';
+  priceInput.value = '';
+  renderMenu();
+});
+
+document.getElementById('submitOrderBtn').addEventListener('click', async ()=>{
+  const ids = Object.keys(cart).filter(id=>cart[id] > 0);
+  if(ids.length === 0) return;
+  const items = ids.map(id=>{
+    const item = menu.find(m=>m.id===id);
+    return {menuId:id, name:item.name, price:item.price, qty:cart[id]};
+  });
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+  const order = {id: uid('o'), time: new Date().toISOString(), items, total};
+  orders.unshift(order);
+  await safeSet(STORAGE_KEYS.orders, orders);
+  cart = {};
+  renderMenu();
+  renderCart();
+  renderOrderLog();
+});
+
+function renderOrderLog(){
+  const log = document.getElementById('orderLog');
+  if(orders.length === 0){
+    log.innerHTML = '<div class="empty-note">Пока нет заказов</div>';
+    return;
+  }
+  log.innerHTML = '';
+  orders.forEach(o=>{
+    const t = new Date(o.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    const itemsStr = o.items.map(i=>`${escapeHtml(i.name)} ×${i.qty}`).join(', ');
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.innerHTML = `
+      <div class="top-line"><span>${t}</span><span>${money(o.total)}</span></div>
+      <div class="sub">${itemsStr} <button class="del" data-id="${o.id}">удалить</button></div>
+    `;
+    log.appendChild(row);
+  });
+  log.querySelectorAll('.del').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      orders = orders.filter(o=>o.id !== b.dataset.id);
+      await safeSet(STORAGE_KEYS.orders, orders);
+      renderOrderLog();
+    });
+  });
+}
+
+/* ---------- BALLOONS ---------- */
+document.getElementById('balloonPrice').addEventListener('change', async (e)=>{
+  balloonPrice = parseFloat(e.target.value) || 0;
+  await safeSet(STORAGE_KEYS.balloonPrice, balloonPrice);
+});
+
+document.getElementById('addBalloonBtn').addEventListener('click', async ()=>{
+  const client = document.getElementById('balloonClient').value.trim();
+  const ordered = parseInt(document.getElementById('balloonOrdered').value) || 0;
+  if(ordered === 0 && !client) return;
+  const rec = {id: uid('b'), time: new Date().toISOString(), client: client || 'Без имени', ordered, given: 0};
+  balloonRecords.unshift(rec);
+  await safeSet(STORAGE_KEYS.balloons, balloonRecords);
+  document.getElementById('balloonClient').value = '';
+  document.getElementById('balloonOrdered').value = 0;
+  renderBalloonLog();
+});
+
+function renderBalloonLog(){
+  const log = document.getElementById('balloonLog');
+  if(balloonRecords.length === 0){
+    log.innerHTML = '<div class="empty-note">Пока нет записей</div>';
+    return;
+  }
+  log.innerHTML = '';
+  balloonRecords.forEach(r=>{
+    const t = new Date(r.time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    const remaining = r.ordered - r.given;
+    let remClass = 'remaining';
+    if(remaining === 0) remClass += ' zero';
+    else if(remaining < 0) remClass += ' over';
+    const card = document.createElement('div');
+    card.className = 'balloon-card';
+    card.innerHTML = `
+      <div class="bc-top">
+        <span class="bc-name">${escapeHtml(r.client)}</span>
+        <span class="bc-time">${t}</span>
+      </div>
+      <div class="bc-stats">
+        <div class="bc-stat ordered">
+          <div class="bc-lbl">Заказано</div>
+          <div class="bc-val">${r.ordered}</div>
+        </div>
+        <div class="bc-stat given">
+          <div class="bc-lbl">Отдано</div>
+          <div class="bc-given-controls">
+            <button class="minus" data-id="${r.id}" data-act="dec">−</button>
+            <span class="bc-val">${r.given}</span>
+            <button class="plus" data-id="${r.id}" data-act="inc">+</button>
+          </div>
+        </div>
+        <div class="bc-stat ${remClass}">
+          <div class="bc-lbl">Осталось</div>
+          <div class="bc-val">${remaining}</div>
+        </div>
+      </div>
+      <div class="bc-card-footer">
+        <button class="del-balloon" data-id="${r.id}">удалить запись</button>
+      </div>
+    `;
+    log.appendChild(card);
+  });
+  log.querySelectorAll('.bc-given-controls button').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const rec = balloonRecords.find(r=>r.id === b.dataset.id);
+      if(!rec) return;
+      if(b.dataset.act === 'inc') rec.given += 1;
+      else rec.given = Math.max(0, rec.given - 1);
+      await safeSet(STORAGE_KEYS.balloons, balloonRecords);
+      renderBalloonLog();
+      renderReport();
+    });
+  });
+  log.querySelectorAll('.del-balloon').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(b.dataset.confirm !== 'yes'){
+        b.dataset.confirm = 'yes';
+        b.textContent = 'Точно удалить?';
+        setTimeout(()=>{
+          if(b.dataset.confirm === 'yes'){
+            b.dataset.confirm = '';
+            b.textContent = 'удалить запись';
+          }
+        }, 2500);
+        return;
+      }
+      balloonRecords = balloonRecords.filter(r=>r.id !== b.dataset.id);
+      await safeSet(STORAGE_KEYS.balloons, balloonRecords);
+      renderBalloonLog();
+      renderReport();
+    });
+  });
+}
+
+/* ---------- REPORT ---------- */
+function computeReportData(){
+  const agg = {};
+  orders.forEach(o=>{
+    o.items.forEach(i=>{
+      if(!agg[i.name]) agg[i.name] = {qty:0, total:0};
+      agg[i.name].qty += i.qty;
+      agg[i.name].total += i.qty * i.price;
+    });
+  });
+  const barTotal = Object.values(agg).reduce((s,v)=>s+v.total,0);
+
+  const bTotals = balloonRecords.reduce((acc,r)=>{
+    acc.ordered += r.ordered;
+    acc.given += r.given;
+    acc.remaining += (r.ordered - r.given);
+    return acc;
+  }, {ordered:0, given:0, remaining:0});
+  const balloonRevenue = bTotals.given * balloonPrice;
+  const grandTotal = barTotal + balloonRevenue;
+
+  return {agg, barTotal, bTotals, balloonRevenue, grandTotal};
+}
+
+function renderReport(){
+  const container = document.getElementById('reportContent');
+
+  if(orders.length === 0 && balloonRecords.length === 0){
+    container.innerHTML = '<div class="empty-note">Ещё нет данных за смену — оформите заказы или добавьте записи по шарам</div>';
+    return;
+  }
+
+  const {agg, barTotal, bTotals, balloonRevenue, grandTotal} = computeReportData();
+
+  let html = '';
+
+  html += `<div class="report-block">
+    <h3>Бар — продано напитков</h3>`;
+  if(Object.keys(agg).length === 0){
+    html += `<div class="empty-note">Заказов не было</div>`;
+  } else {
+    html += `<table class="report-table"><thead><tr><th>Напиток</th><th class="num">Кол-во</th><th class="num">Сумма</th></tr></thead><tbody>`;
+    Object.entries(agg).sort((a,b)=>b[1].total-a[1].total).forEach(([name,v])=>{
+      html += `<tr><td>${escapeHtml(name)}</td><td class="num">${v.qty}</td><td class="num">${money(v.total)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+  html += `<div class="grand-total" style="margin-top:8px;"><span class="lbl">Выручка бара</span><span class="val" style="font-size:18px;">${money(barTotal)}</span></div>`;
+  html += `</div>`;
+
+  html += `<div class="report-block balloons">
+    <h3>Шары</h3>`;
+  if(balloonRecords.length === 0){
+    html += `<div class="empty-note">Записей не было</div>`;
+  } else {
+    html += `<table class="report-table"><thead><tr><th>Показатель</th><th class="num">Итого</th></tr></thead><tbody>
+      <tr><td>Заказано</td><td class="num">${bTotals.ordered}</td></tr>
+      <tr><td>Отдано</td><td class="num">${bTotals.given}</td></tr>
+      <tr><td>Осталось (не отдано)</td><td class="num">${bTotals.remaining}</td></tr>
+    </tbody></table>`;
+    if(balloonPrice > 0){
+      html += `<div class="grand-total" style="margin-top:8px;"><span class="lbl">Выручка по шарам (${bTotals.given} × ${money(balloonPrice)})</span><span class="val" style="font-size:18px;">${money(balloonRevenue)}</span></div>`;
+    } else {
+      html += `<div class="empty-note">Цена за шар не задана — выручка не считается</div>`;
+    }
+  }
+  html += `</div>`;
+
+  html += `<div class="grand-total"><span class="lbl">Всего заработано за смену</span><span class="val">${money(grandTotal)}</span></div>`;
+
+  container.innerHTML = html;
+}
+
+document.getElementById('printReportBtn').addEventListener('click', ()=>{
+  renderReport();
+  window.print();
+});
+
+document.getElementById('downloadReportBtn').addEventListener('click', ()=>{
+  if(orders.length === 0 && balloonRecords.length === 0){
+    return;
+  }
+  const {agg, barTotal, bTotals, balloonRevenue, grandTotal} = computeReportData();
+  const now = new Date();
+  const dateStr = now.toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  let barRows = '';
+  if(Object.keys(agg).length === 0){
+    barRows = '<tr><td colspan="3" style="color:#888;">Заказов не было</td></tr>';
+  } else {
+    Object.entries(agg).sort((a,b)=>b[1].total-a[1].total).forEach(([name,v])=>{
+      barRows += `<tr><td>${escapeHtml(name)}</td><td align="right">${v.qty}</td><td align="right">${money(v.total)}</td></tr>`;
+    });
+  }
+
+  const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Отчёт за смену</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  body{font-family:Calibri,Arial,sans-serif;color:#222;font-size:14px;}
+  h1{font-size:20px;margin-bottom:2px;}
+  .sub{color:#666;font-size:12px;margin-bottom:20px;}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:0.5px;margin:22px 0 8px;color:#B4740F;}
+  h2.b{color:#1B8783;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:10px;}
+  th,td{text-align:left;padding:6px 8px;border:1px solid #ccc;}
+  th{background:#F0F0F0;font-weight:600;font-size:12px;}
+  .total-row{background:#F3F3F3;padding:10px 14px;margin-top:6px;font-weight:700;}
+  .grand{background:#241704;color:#ffffff;padding:14px;margin-top:14px;font-size:16px;}
+  .grand .val{color:#E8A33D;}
+</style>
+</head>
+<body>
+  <h1>Отчёт за смену</h1>
+  <div class="sub">Сформирован: ${dateStr}</div>
+
+  <h2>Бар — продано напитков</h2>
+  <table>
+    <tr><th>Напиток</th><th>Кол-во</th><th>Сумма</th></tr>
+    ${barRows}
+  </table>
+  <div class="total-row">Выручка бара: ${money(barTotal)}</div>
+
+  <h2 class="b">Шары</h2>
+  <table>
+    <tr><th>Показатель</th><th>Итого</th></tr>
+    <tr><td>Заказано</td><td align="right">${bTotals.ordered}</td></tr>
+    <tr><td>Отдано</td><td align="right">${bTotals.given}</td></tr>
+    <tr><td>Осталось (не отдано)</td><td align="right">${bTotals.remaining}</td></tr>
+  </table>
+  ${balloonPrice > 0
+    ? `<div class="total-row">Выручка по шарам (${bTotals.given} × ${money(balloonPrice)}): ${money(balloonRevenue)}</div>`
+    : `<div class="sub">Цена за шар не задана — выручка не считается</div>`}
+
+  <div class="grand">Всего заработано за смену: <span class="val">${money(grandTotal)}</span></div>
+</body>
+</html>`;
+
+  const blob = new Blob(['\ufeff', doc], {type: 'application/msword'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fileDate = now.toISOString().slice(0,16).replace(/[:T]/g,'-');
+  a.href = url;
+  a.download = `otchet-smena-${fileDate}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearShiftBtn').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget;
+  if(btn.dataset.confirm !== 'yes'){
+    btn.dataset.confirm = 'yes';
+    btn.textContent = 'Точно очистить? Нажмите ещё раз';
+    setTimeout(()=>{
+      if(btn.dataset.confirm === 'yes'){
+        btn.dataset.confirm = '';
+        btn.textContent = 'Завершить смену (очистить)';
+      }
+    }, 3000);
+    return;
+  }
+  btn.dataset.confirm = '';
+  btn.textContent = 'Завершить смену (очистить)';
+  orders = [];
+  balloonRecords = [];
+  shiftStart = new Date().toISOString();
+  await safeSet(STORAGE_KEYS.orders, orders);
+  await safeSet(STORAGE_KEYS.balloons, balloonRecords);
+  await safeSet(STORAGE_KEYS.shiftStart, shiftStart);
+  renderOrderLog();
+  renderBalloonLog();
+  renderReport();
+});
+
+init();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(e=>console.log('SW error', e));
+  });
+}
+</script>
+</body>
+</html>
